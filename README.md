@@ -4,7 +4,7 @@ X.509 certificates (PEM or DER) from local files or remote URIs, with support
 for multiple output formats (Markdown, JSON, CSV). The default output (without any switches) is a Markdown table. For now the dataset is fixed (see below) but I'm thinking about producing different data sets based on demand.
 
 The tool requires the `cryptography` 
-library; install dependencies using `pip install -e .[test]` before running the 
+library; install dependencies using `pip install -e .` before running the 
 tool, otherwise you'll see a clear error message pointing out the missing package.
 
 disclaimer: fully built with Copilot. Use at your own risk.
