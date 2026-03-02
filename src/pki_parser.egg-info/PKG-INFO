@@ -1,0 +1,47 @@
+Metadata-Version: 2.4
+Name: pki-parser
+Version: 0.1.0
+Summary: Simple X.509 PKI certificate parser
+Author-email: Jochem van den Berge <sleutelman@oikp.nl>
+License: MIT
+Description-Content-Type: text/markdown
+Requires-Dist: cryptography>=0
+Provides-Extra: test
+Requires-Dist: pytest; extra == "test"
+
+# pki-parser
+probably vibe-coded PKI-parser for extracting data from x.509 certificates
+
+This repository contains a simple Python library and CLI for parsing
+X.509 certificates (PEM or DER) and displaying a subset of fields in a
+Markdown table.  It requires the `cryptography` library; install dependencies
+using `pip install -e .[test]` before running the tool, otherwise you'll see a
+clear error message pointing out the missing package.
+
+## Quickstart
+
+```bash
+# create a virtualenv and install
+python -m venv venv
+source venv/bin/activate
+pip install -e .
+
+# parse a certificate
+pki-parser path/to/cert.pem
+```
+
+The CLI prints the core certificate fields listed below in a **single
+horizontal Markdown table** (one certificate per row), rather than JSON or
+multiple sections. The first row contains column headers matching the field
+names in the exact order shown.
+
+- subject (DN attributes combined; `countryName`→`C`, `organizationName`→`O`, `commonName`→`C`)
+- issuer (same abbreviations apply)
+- serial number
+- key algorithm
+- key size
+- digest algorithm
+- not before (date only)
+- not after (date only)
+- subject key identifier
+- SHA-256 fingerprint

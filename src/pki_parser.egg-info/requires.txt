@@ -1,0 +1,4 @@
+cryptography>=0
+
+[test]
+pytest

@@ -1,0 +1,2 @@
+[console_scripts]
+pki-parser = pki_parser.cli:main

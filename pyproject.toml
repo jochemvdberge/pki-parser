@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pki-parser"
+version = "0.1.0"
+description = "Simple X.509 PKI certificate parser"
+authors = [{name = "Jochem van den Berge", email = "sleutelman@oikp.nl"}]
+readme = "README.md"
+license = {text = "MIT"}
+
+dependencies = [
+    "cryptography>=0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
+
+[project.scripts]
+pki-parser = "pki_parser.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
