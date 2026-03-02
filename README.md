@@ -1,7 +1,9 @@
 # pki-parser
 This repository contains a simple Python library and CLI for parsing
 X.509 certificates (PEM or DER) from local files or remote URIs, with support 
-for multiple output formats (Markdown, JSON, CSV).  It requires the `cryptography` 
+for multiple output formats (Markdown, JSON, CSV). The default output (without any switches) is a Markdown table. For now the dataset is fixed (see below) but I'm thinking about producing different data sets based on demand.
+
+The tool requires the `cryptography` 
 library; install dependencies using `pip install -e .[test]` before running the 
 tool, otherwise you'll see a clear error message pointing out the missing package.
 
@@ -20,7 +22,7 @@ pki-parser path/to/cert1.pem [path/to/cert2.pem ...]
 
 # fetch from remote URLs (auto-detected or explicit)
 pki-parser https://example.com/cert.pem
-pki-parser https://example.com/cert.pem --uri
+pki-parser --uri https://example.com/cert.pem
 
 # output as JSON instead of Markdown
 pki-parser path/to/cert.pem --format json
