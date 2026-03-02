@@ -30,7 +30,7 @@ pki-parser path/to/cert.pem --format json
 # output as CSV (semicolon-separated)
 pki-parser path/to/cert.pem --format csv
 
-# mix local files and remote URLs with custom output
+# mix local files and remote URLs with custom output and saving to file on disk
 pki-parser /local/cert.pem https://example.com/cert.pem --format csv -o output.csv
 ```
 
