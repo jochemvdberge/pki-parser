@@ -1,11 +1,11 @@
 # pki-parser
-probably vibe-coded PKI-parser for extracting data from x.509 certificates
-
 This repository contains a simple Python library and CLI for parsing
 X.509 certificates (PEM or DER) and displaying a subset of fields in a
 Markdown table.  It requires the `cryptography` library; install dependencies
 using `pip install -e .[test]` before running the tool, otherwise you'll see a
 clear error message pointing out the missing package.
+
+disclaimer: fully built with Copilot. Use at your own risk.
 
 ## Quickstart
 
