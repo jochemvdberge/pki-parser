@@ -53,7 +53,7 @@ def test_cli(tmp_path, monkeypatch, capsys):
     cert_file = tmp_path / "cert.pem"
     cert_file.write_bytes(data)
 
-    # run CLI and capture printed markdown
+    # run CLI and capture printed markdown for a single file
     from pki_parser import cli
 
     ret = cli.main([str(cert_file)])
@@ -93,6 +93,20 @@ def test_cli(tmp_path, monkeypatch, capsys):
     # and fingerprint is uppercase
     assert ":" in captured.out  # colon-separated serial
     assert "A" in [c for c in captured.out if c.isupper()] or "B" in captured.out  # has uppercase letters
+
+    # now test multiple files in one invocation
+    cert_file2 = tmp_path / "cert2.pem"
+    cert_file2.write_bytes(data)
+    ret = cli.main([str(cert_file), str(cert_file2)])
+    assert ret == 0
+    captured = capsys.readouterr()
+    # should have plural title and two data rows
+    assert "# Certificates" in captured.out
+    lines = [l for l in captured.out.strip().splitlines() if l.startswith("|")]
+    assert len(lines) >= 3  # header + separator + at least two value rows
+    # verify both rows are present – they will be identical here
+    rows = lines[2:]
+    assert len(rows) == 2
 
 
 def test_cli_missing_dependency(tmp_path, monkeypatch, capsys):

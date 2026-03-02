@@ -15,9 +15,11 @@ python -m venv venv
 source venv/bin/activate
 pip install -e .
 
-# parse a certificate
-pki-parser path/to/cert.pem
-```
+# parse one or more certificates
+pki-parser path/to/cert1.pem [path/to/cert2.pem ...]
+
+The CLI now accepts multiple file paths and will emit a single Markdown
+table with one row per certificate.```
 
 The CLI prints the core certificate fields listed below in a **single
 horizontal Markdown table** (one certificate per row), rather than JSON or
