@@ -1,6 +1,8 @@
 import json
 import os
 import pathlib
+from unittest.mock import patch, MagicMock
+from io import BytesIO
 
 import pytest
 
@@ -125,3 +127,257 @@ def test_cli_missing_dependency(tmp_path, monkeypatch, capsys):
     ret = cli.main([str(cert_file)])
     assert ret == 0  # should succeed for valid cert
     # The import-blocking behavior is tested in test_missing_dependency
+
+
+def test_cli_json_format(tmp_path, capsys):
+    """Test that CLI can output JSON format."""
+    data = load_fixture("test_cert.pem")
+    cert_file = tmp_path / "cert.pem"
+    cert_file.write_bytes(data)
+
+    from pki_parser import cli
+    
+    ret = cli.main([str(cert_file), "--format", "json"])
+    assert ret == 0
+    captured = capsys.readouterr()
+    
+    # output should be valid JSON
+    parsed = json.loads(captured.out)
+    assert isinstance(parsed, list)
+    assert len(parsed) == 1
+    assert isinstance(parsed[0], dict)
+    
+    # should contain the expected key fields
+    cert_info = parsed[0]
+    expected_keys = {
+        "subject",
+        "issuer",
+        "serial_number",
+        "key_algorithm",
+        "key_size",
+        "digest_algorithm",
+        "not_before",
+        "not_after",
+        "subject_key_identifier",
+        "sha256_fingerprint",
+    }
+    assert set(cert_info.keys()) == expected_keys
+
+
+def test_cli_csv_format(tmp_path, capsys):
+    """Test that CLI can output CSV format with semicolon delimiter."""
+    data = load_fixture("test_cert.pem")
+    cert_file = tmp_path / "cert.pem"
+    cert_file.write_bytes(data)
+
+    from pki_parser import cli
+    
+    ret = cli.main([str(cert_file), "--format", "csv"])
+    assert ret == 0
+    captured = capsys.readouterr()
+    
+    # output should be valid CSV with semicolons
+    lines = captured.out.strip().split("\n")
+    assert len(lines) >= 2  # header + at least one data row
+    
+    # header should contain expected column names
+    header = lines[0]
+    assert "subject" in header
+    assert "issuer" in header
+    assert "serial_number" in header
+    assert "sha256_fingerprint" in header
+    
+    # should use semicolons as delimiter
+    assert ";" in header
+    
+    # data row should match header field count
+    data_row = lines[1]
+    assert data_row.count(";") == header.count(";")
+
+
+def test_cli_markdown_format_explicit(tmp_path, capsys):
+    """Test that markdown format can be explicitly specified."""
+    data = load_fixture("test_cert.pem")
+    cert_file = tmp_path / "cert.pem"
+    cert_file.write_bytes(data)
+
+    from pki_parser import cli
+    
+    ret = cli.main([str(cert_file), "--format", "markdown"])
+    assert ret == 0
+    captured = capsys.readouterr()
+    
+    # output should be markdown table
+    assert "# Certificate" in captured.out
+    assert "|" in captured.out
+    # header row should be present
+    lines = [l for l in captured.out.split("\n") if l.startswith("|")]
+    assert len(lines) >= 3  # header + separator + data
+
+
+def test_cli_multiple_formats(tmp_path, capsys):
+    """Test that multiple certificates work with different formats."""
+    data = load_fixture("test_cert.pem")
+    cert_file1 = tmp_path / "cert1.pem"
+    cert_file2 = tmp_path / "cert2.pem"
+    cert_file1.write_bytes(data)
+    cert_file2.write_bytes(data)
+
+    from pki_parser import cli
+    
+    # test with JSON
+    ret = cli.main([str(cert_file1), str(cert_file2), "--format", "json"])
+    assert ret == 0
+    captured = capsys.readouterr()
+    parsed = json.loads(captured.out)
+    assert len(parsed) == 2
+    
+    # test with CSV
+    ret = cli.main([str(cert_file1), str(cert_file2), "--format", "csv"])
+    assert ret == 0
+    captured = capsys.readouterr()
+    lines = captured.out.strip().split("\n")
+    assert len(lines) == 3  # header + 2 data rows
+
+
+def test_load_certificate_data_local_file(tmp_path):
+    """Test loading certificate from local file."""
+    data = load_fixture("test_cert.pem")
+    cert_file = tmp_path / "cert.pem"
+    cert_file.write_bytes(data)
+
+    from pki_parser.cli import _load_certificate_data
+    
+    # Test with is_uri=False (normal file mode)
+    loaded_data = _load_certificate_data(str(cert_file), is_uri=False)
+    assert loaded_data == data
+    
+    # Test auto-detection (should detect it's not a URL and load as file)
+    loaded_data = _load_certificate_data(str(cert_file), is_uri=False)
+    assert loaded_data == data
+
+
+def test_load_certificate_data_uri_auto_detect(tmp_path):
+    """Test auto-detection of URIs (starting with http/https)."""
+    data = load_fixture("test_cert.pem")
+    url = "https://example.com/cert.pem"
+    
+    from pki_parser.cli import _load_certificate_data
+    
+    # Mock urlopen to return certificate data
+    with patch("pki_parser.cli.urlopen") as mock_urlopen:
+        mock_response = MagicMock()
+        mock_response.__enter__.return_value = BytesIO(data)
+        mock_urlopen.return_value = mock_response
+        
+        # Auto-detect URL and fetch
+        loaded_data = _load_certificate_data(url, is_uri=False)
+        assert loaded_data == data
+        mock_urlopen.assert_called_once_with(url)
+
+
+def test_load_certificate_data_uri_flag(tmp_path):
+    """Test explicit --uri flag."""
+    data = load_fixture("test_cert.pem")
+    url = "https://example.com/cert.pem"
+    
+    from pki_parser.cli import _load_certificate_data
+    
+    # Mock urlopen to return certificate data
+    with patch("pki_parser.cli.urlopen") as mock_urlopen:
+        mock_response = MagicMock()
+        mock_response.__enter__.return_value = BytesIO(data)
+        mock_urlopen.return_value = mock_response
+        
+        # Explicit URI mode with is_uri=True
+        loaded_data = _load_certificate_data(url, is_uri=True)
+        assert loaded_data == data
+        mock_urlopen.assert_called_once_with(url)
+
+
+def test_cli_uri_auto_detect(tmp_path, capsys):
+    """Test that CLI auto-detects and fetches URLs."""
+    data = load_fixture("test_cert.pem")
+    url = "https://example.com/cert.pem"
+    
+    from pki_parser import cli
+    
+    # Mock urlopen to return certificate data
+    with patch("pki_parser.cli.urlopen") as mock_urlopen:
+        mock_response = MagicMock()
+        mock_response.__enter__.return_value = BytesIO(data)
+        mock_urlopen.return_value = mock_response
+        
+        ret = cli.main([url])
+        assert ret == 0
+        captured = capsys.readouterr()
+        
+        # Should have produced markdown output
+        assert "# Certificate" in captured.out
+        assert "|" in captured.out
+        mock_urlopen.assert_called_once_with(url)
+
+
+def test_cli_uri_flag(tmp_path, capsys):
+    """Test explicit --uri flag with URL."""
+    data = load_fixture("test_cert.pem")
+    url = "https://example.com/cert.pem"
+    
+    from pki_parser import cli
+    
+    # Mock urlopen to return certificate data
+    with patch("pki_parser.cli.urlopen") as mock_urlopen:
+        mock_response = MagicMock()
+        mock_response.__enter__.return_value = BytesIO(data)
+        mock_urlopen.return_value = mock_response
+        
+        ret = cli.main([url, "--uri"])
+        assert ret == 0
+        captured = capsys.readouterr()
+        
+        # Should have produced markdown output
+        assert "# Certificate" in captured.out
+        mock_urlopen.assert_called_once_with(url)
+
+
+def test_cli_mixed_local_and_uri(tmp_path, capsys):
+    """Test CLI with both local files and URIs in one command."""
+    data = load_fixture("test_cert.pem")
+    cert_file = tmp_path / "cert.pem"
+    cert_file.write_bytes(data)
+    url = "https://example.com/cert.pem"
+    
+    from pki_parser import cli
+    
+    # Mock urlopen for the URL
+    with patch("pki_parser.cli.urlopen") as mock_urlopen:
+        mock_response = MagicMock()
+        mock_response.__enter__.return_value = BytesIO(data)
+        mock_urlopen.return_value = mock_response
+        
+        ret = cli.main([str(cert_file), url, "--format", "json"])
+        assert ret == 0
+        captured = capsys.readouterr()
+        
+        # Should have processed both
+        parsed = json.loads(captured.out)
+        assert len(parsed) == 2
+        mock_urlopen.assert_called_once_with(url)
+
+
+def test_cli_uri_fetch_error(tmp_path, capsys):
+    """Test handling of URI fetch errors."""
+    from pki_parser import cli
+    from urllib.error import URLError
+    
+    url = "https://example.com/missing_cert.pem"
+    
+    # Mock urlopen to raise error
+    with patch("pki_parser.cli.urlopen") as mock_urlopen:
+        mock_urlopen.side_effect = URLError("404 Not Found")
+        
+        ret = cli.main([url])
+        assert ret == 1
+        captured = capsys.readouterr()
+        assert "Error fetching" in captured.err
+        assert url in captured.err

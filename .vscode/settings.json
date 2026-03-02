@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^python -m pytest tests/test_parser\\.py -v$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
