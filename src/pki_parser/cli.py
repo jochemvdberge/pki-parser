@@ -30,9 +30,9 @@ def main(argv=None) -> int:
     parser.add_argument(
         "-f",
         "--format",
-        choices=["markdown", "json", "csv"],
-        default="markdown",
-        help="Output format: markdown (default), json, or csv (semicolon-separated).",
+        choices=["markdown-break", "markdown-comma", "json", "csv"],
+        default="markdown-break",
+        help="Output format: markdown-break (default, with line breaks), markdown-comma (with commas), json, or csv (semicolon-separated).",
     )
     parser.add_argument(
         "-u",
@@ -77,8 +77,10 @@ def main(argv=None) -> int:
         text = _format_json(infos)
     elif args.format == "csv":
         text = _format_csv(infos)
-    else:  # markdown (default)
-        text = _format_markdown(infos)
+    elif args.format == "markdown-break":
+        text = _format_markdown(infos, separator="<br>")
+    else:  # markdown-comma
+        text = _format_markdown(infos, separator=", ")
     
     if args.output:
         with open(args.output, "w") as f:
@@ -114,12 +116,16 @@ def _load_certificate_data(source: str, is_uri: bool) -> bytes:
             return f.read()
 
 
-def _format_markdown(infos: Iterable[dict]) -> str:
+def _format_markdown(infos: Iterable[dict], separator: str = "<br>") -> str:
     """Render one or more parsed certificate info dicts as a Markdown table.
 
     ``infos`` may be a single dict or an iterable of dicts.  The table header is
     built from the union of fields present across all entries but always
     respects the canonical column order required by the CLI spec.
+    
+    Args:
+        infos: One or more certificate info dicts
+        separator: String to use between DN elements (default "<br>" for line breaks, or ", " for comma separation)
     """
 
     # make sure we work uniformly with a list
@@ -138,7 +144,7 @@ def _format_markdown(infos: Iterable[dict]) -> str:
         for k, v in d.items():
             key = abbrev.get(k, k)
             parts.append(f"{key}={v}")
-        return ", ".join(parts)
+        return separator.join(parts)
 
     def fmt_serial(s: str) -> str:
         if s.startswith(("0x", "0X")):

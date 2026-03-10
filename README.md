@@ -46,9 +46,10 @@ Positional arguments:
 Optional arguments:
   -h, --help         Show help message and exit
   -o, --output FILE  Write output to file instead of stdout
-  -f, --format {markdown,json,csv}
-                     Output format (default: markdown)
-                     - markdown: Markdown table
+  -f, --format {markdown-break,markdown-comma,json,csv}
+                     Output format (default: markdown-break)
+                     - markdown-break: Markdown table with line breaks in DN fields
+                     - markdown-comma: Markdown table with comma-separated DN fields
                      - json: JSON array of certificate objects
                      - csv: CSV with semicolon delimiters
   -u, --uri          Treat arguments as URIs and fetch from the network
@@ -57,14 +58,24 @@ Optional arguments:
 
 ## Output Formats
 
-### Markdown (default)
-A formatted Markdown table, suitable for documents and reports:
+### Markdown (markdown-break, default)
+A formatted Markdown table with line breaks in DN fields, suitable for documents and reports:
 ```
 # Certificate
 
 | subject | issuer | serial_number | ... |
 | --- | --- | --- | ... |
-| CN=example.com,O=Example,C=US | CN=Root CA,O=Example,C=US | ab:cd:ef | ... |
+| C=US<br>O=Example<br>CN=example.com | C=US<br>O=Root CA<br>CN=Root CA | ab:cd:ef | ... |
+```
+
+### Markdown (markdown-comma)
+A formatted Markdown table with comma-separated DN fields:
+```
+# Certificate
+
+| subject | issuer | serial_number | ... |
+| --- | --- | --- | ... |
+| C=US, O=Example, CN=example.com | C=US, O=Root CA, CN=Root CA | ab:cd:ef | ... |
 ```
 
 ### JSON
