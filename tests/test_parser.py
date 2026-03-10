@@ -196,14 +196,14 @@ def test_cli_csv_format(tmp_path, capsys):
 
 
 def test_cli_markdown_format_explicit(tmp_path, capsys):
-    """Test that markdown format can be explicitly specified."""
+    """Test that markdown-break format can be explicitly specified."""
     data = load_fixture("test_cert.pem")
     cert_file = tmp_path / "cert.pem"
     cert_file.write_bytes(data)
 
     from pki_parser import cli
     
-    ret = cli.main([str(cert_file), "--format", "markdown"])
+    ret = cli.main([str(cert_file), "--format", "markdown-break"])
     assert ret == 0
     captured = capsys.readouterr()
     
@@ -213,6 +213,44 @@ def test_cli_markdown_format_explicit(tmp_path, capsys):
     # header row should be present
     lines = [l for l in captured.out.split("\n") if l.startswith("|")]
     assert len(lines) >= 3  # header + separator + data
+
+
+def test_cli_markdown_break_format(tmp_path, capsys):
+    """Test that markdown-break format uses <br> separators for DN elements."""
+    data = load_fixture("test_cert.pem")
+    cert_file = tmp_path / "cert.pem"
+    cert_file.write_bytes(data)
+
+    from pki_parser import cli
+    
+    ret = cli.main([str(cert_file), "--format", "markdown-break"])
+    assert ret == 0
+    captured = capsys.readouterr()
+    
+    # Should contain <br> tags instead of commas
+    assert "<br>" in captured.out
+    assert "CN=" in captured.out
+    # Should not have comma separators in DN fields
+    assert ", CN=" not in captured.out  # comma + space + CN should not appear
+    
+
+def test_cli_markdown_comma_format(tmp_path, capsys):
+    """Test that markdown-comma format uses comma separators for DN elements."""
+    data = load_fixture("test_cert.pem")
+    cert_file = tmp_path / "cert.pem"
+    cert_file.write_bytes(data)
+
+    from pki_parser import cli
+    
+    ret = cli.main([str(cert_file), "--format", "markdown-comma"])
+    assert ret == 0
+    captured = capsys.readouterr()
+    
+    # Should contain comma separators instead of <br> tags
+    assert ", " in captured.out
+    assert "CN=" in captured.out
+    # Should not have <br> tags
+    assert "<br>" not in captured.out
 
 
 def test_cli_multiple_formats(tmp_path, capsys):
